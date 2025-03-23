@@ -1,114 +1,94 @@
 'use strict';
 
+const cells = document.querySelectorAll('.field-cell');
+const button = document.querySelector('.button');
+const score = document.querySelector('.game-score');
+const messageStart = document.querySelector('.message-start');
+const messageWin = document.querySelector('.message-win');
+const messageLose = document.querySelector('.message-lose');
+
 // Uncomment the next lines to use your game instance in the browser
 const Game = require('../modules/Game.class');
 const game = new Game();
 
-// Write your code here
+button.addEventListener('click', () => {
+  if (game.getStatus() === 'idle') {
+    game.start();
+    button.disabled = true;
 
-document.addEventListener('keydown', function (e) {
-  if (e.key === 'ArrowUp') {
-    game.moveUp();
+    messageStart.classList.add('hidden');
+    messageWin.classList.add('hidden');
+    messageLose.classList.add('hidden');
+  } else {
+    game.restart();
+    game.start();
+
+    messageLose.classList.add('hidden');
   }
 
-  if (e.key === 'ArrowDown') {
-    game.moveDown();
-  }
-
-  if (e.key === 'ArrowLeft') {
-    game.moveLeft();
-  }
-
-  if (e.key === 'ArrowRight') {
-    game.moveRight();
-  }
-
-  game.addRandom();
-  checkLoose();
-  checkWin();
-
-  renderMatrix(game.getState());
-  addClasses(game.getState());
-  updateScore();
+  renderBoard(game.getState());
 });
 
-function renderMatrix(matrix) {
-  const cells = [...document.querySelectorAll('td')];
-
-  const m = matrix.flat();
-
-  for (let i = 0; i < m.length; i++) {
-    if (m[i] === 0) {
-      cells[i].innerText = '';
-      continue;
-    }
-
-    cells[i].innerText = m[i];
-  }
-}
-
-function addClasses(matrix) {
-  const cells = [...document.querySelectorAll('td')];
-
-  const m = matrix.flat();
-
-  for (let i = 0; i < m.length; i++) {
-    cells[i].className = '';
-    cells[i].classList.add('field-cell');
-
-    if (m[i] !== 0) {
-      cells[i].classList.add(`field-cell--${m[i]}`);
-    }
-  }
-}
-
-const startButton = document.querySelector('.start');
-const startMessage = document.querySelector('.message-start');
-
-startButton.addEventListener('click', (e) => {
-  if (e.target.innerText === 'Restart') {
-    clickRestart();
-  }
-
-  if (e.target.innerText === 'Start') {
-    clickStart();
-    startMessage.style.display = 'none';
-  }
-
-  renderMatrix(game.getState());
-  addClasses(game.getState());
+document.addEventListener('win', () => {
+  messageWin.classList.remove('hidden');
 });
 
-function clickStart() {
-  game.start();
-  startButton.classList.remove('start');
-  startButton.classList.add('restart');
-  startButton.innerText = 'Restart';
-}
-
-function clickRestart() {
-  game.restart();
-  loseMessage.classList.add('hidden');
-  winMessage.classList.add('hidden');
-}
-
-function updateScore() {
-  const score = document.querySelector('.game-score');
-
+function renderBoard(cellsAfterMove) {
   score.innerText = game.getScore();
-}
 
-const loseMessage = document.querySelector('.message-lose');
-const winMessage = document.querySelector('.message-win');
-
-function checkLoose() {
-  if (game.getStatus() === 'lose') {
-    loseMessage.classList.remove('hidden');
+  if (game.status === 'lose') {
+    messageLose.classList.remove('hidden');
   }
+
+  cellsAfterMove.forEach((row, rowIndex) => {
+    row.forEach((cell, colIndex) => {
+      const cellElement = cells[rowIndex * 4 + colIndex];
+
+      if (cell !== 0) {
+        cellElement.textContent = cell;
+        cellElement.className = `field-cell field-cell--${cell}`;
+      } else {
+        cellElement.textContent = '';
+        cellElement.className = 'field-cell';
+      }
+
+      game.changedСell.forEach(([cellRow, cellColumn]) => {
+        if (cellRow === rowIndex && cellColumn === colIndex) {
+          cellElement.classList.add('animation');
+
+          cellElement.addEventListener('animationend', () => {
+            cellElement.classList.remove('animation');
+          });
+        }
+      });
+    });
+  });
 }
 
-function checkWin() {
-  if (game.getStatus() === 'win') {
-    winMessage.classList.remove('hidden');
+document.addEventListener('keydown', (e) => {
+  if (game.getStatus() === 'playing') {
+    switch (e.key) {
+      case 'ArrowUp':
+        game.moveUp();
+        break;
+      case 'ArrowDown':
+        game.moveDown();
+        break;
+      case 'ArrowLeft':
+        game.moveLeft();
+        break;
+      case 'ArrowRight':
+        game.moveRight();
+        break;
+    }
   }
-}
+
+  button.disabled = false;
+
+  if (button.innerText === 'Start') {
+    button.innerText = 'Restart';
+    button.className = 'button restart';
+  }
+
+  renderBoard(game.getState());
+});
